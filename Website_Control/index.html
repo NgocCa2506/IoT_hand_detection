@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Điều Khiển Nhà Thông Minh</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Điều Khiển Nhà Thông Minh</h1>
+            <div id="current-datetime">Đang tải...</div>
+        </header>
+        
+        <div class="device-grid">
+            <!-- Thẻ đầu tiên - Đã sửa lại cấu trúc -->
+            <div class="device-card" data-device="light" data-relay="relay_1">
+                <div class="card-header">
+                    <span>Đèn Phòng Khách</span>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+                <div class="device-icon" onclick="toggleDevice(event, this)">
+                    <div class="icon-circle">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                </div>
+                <div class="device-status">
+                    <span class="status-dot offline"></span>
+                    <span class="status-text">Tắt • Cập nhật: 12:30</span>
+                </div>
+                <div class="schedule-info"></div>
+            </div>
+
+            <div class="device-card" data-device="fan" data-relay="relay_2">
+                <div class="card-header">
+                    <span>Quạt Phòng Ngủ</span>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+                <div class="device-icon" onclick="toggleDevice(event, this)">
+                    <div class="icon-circle">
+                        <i class="fas fa-fan"></i>
+                    </div>
+                </div>
+                <div class="device-status">
+                    <span class="status-dot offline"></span>
+                    <span class="status-text">Tắt • Cập nhật: 11:50</span>
+                </div>
+                <div class="schedule-info"></div>
+            </div>
+
+            <div class="device-card" data-device="tv" data-relay="relay_3">
+                <div class="card-header">
+                    <span>Tivi Thông Minh</span>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+                <div class="device-icon" onclick="toggleDevice(event, this)">
+                    <div class="icon-circle">
+                        <i class="fas fa-tv"></i>
+                    </div>
+                </div>
+                <div class="device-status">
+                    <span class="status-dot offline"></span>
+                    <span class="status-text">Tắt • Cập nhật: 10:15</span>
+                </div>
+                <div class="schedule-info"></div>
+            </div>
+
+            <div class="device-card" data-device="ac" data-relay="relay_4">
+                <div class="card-header">
+                    <span>Điều Hòa</span>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+                <div class="device-icon" onclick="toggleDevice(event, this)">
+                    <div class="icon-circle">
+                        <i class="fas fa-wind"></i>
+                    </div>
+                </div>
+                <div class="device-status">
+                    <span class="status-dot offline"></span>
+                    <span class="status-text">Tắt • Cập nhật: 12:20</span>
+                </div>
+                <div class="schedule-info"></div>
+            </div>
+        </div>
+        
+        <div class="connection-status">
+            <span id="firebase-status">Đang kết nối đến Firebase...</span>
+        </div>
+    </div>
+
+    <!-- Scheduler Modal -->
+    <div id="scheduler-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="scheduler-title">Lịch Thiết Bị</h2>
+                <span class="close-modal" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="scheduler-controls">
+                    <div class="schedule-group">
+                        <h3>Thời Gian Bật</h3>
+                        <div class="time-picker">
+                            <input type="time" id="on-time" class="time-input">
+                        </div>
+                    </div>
+                    
+                    <div class="schedule-group">
+                        <h3>Thời Gian Tắt</h3>
+                        <div class="time-picker">
+                            <input type="time" id="off-time" class="time-input">
+                        </div>
+                    </div>
+                    
+                    <div class="schedule-group">
+                        <h3>Lặp Lại</h3>
+                        <div class="day-selector">
+                            <button class="day-btn" data-day="mon">T2</button>
+                            <button class="day-btn" data-day="tue">T3</button>
+                            <button class="day-btn" data-day="wed">T4</button>
+                            <button class="day-btn" data-day="thu">T5</button>
+                            <button class="day-btn" data-day="fri">T6</button>
+                            <button class="day-btn" data-day="sat">T7</button>
+                            <button class="day-btn" data-day="sun">CN</button>
+                        </div>
+                    </div>
+                    
+                    <div class="schedule-group">
+                        <h3>Trạng Thái Lịch</h3>
+                        <label class="switch">
+                            <input type="checkbox" id="schedule-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                        <span class="toggle-label">Lịch Không Hoạt Động</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn primary-btn" onclick="saveSchedule()">Lưu Lịch</button>
+                <button class="btn secondary-btn" onclick="closeModal()">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Configuration -->
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-analytics.js";
+      // TODO: Add SDKs for Firebase products that you want to use
+      // https://firebase.google.com/docs/web/setup#available-libraries
+
+      // Your web app's Firebase configuration
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      const firebaseConfig = {
+        apiKey: "AIzaSyBZ9s4Xaa0qQPNclbpW8yk4CHYSCGXAfOU",
+        authDomain: "mediapipe-91dac.firebaseapp.com",
+        databaseURL: "https://mediapipe-91dac-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "mediapipe-91dac",
+        storageBucket: "mediapipe-91dac.firebasestorage.app",
+        messagingSenderId: "492469159386",
+        appId: "1:492469159386:web:6f03198dc3f687b4ee2ce3",
+        measurementId: "G-NHS3QWL38K"
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+    </script>
+    
+    <!-- Firebase Database Module -->
+    <script type="module">
+      import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-database.js";
+      import { getApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
+      
+      // Get the Firebase app instance that was initialized in the previous script
+      const app = getApp();
+      const database = getDatabase(app);
+      
+      // Make Firebase services available globally
+      window.firebaseDatabase = database;
+      window.firebaseRef = ref;
+      window.firebaseSet = set;
+      window.firebaseGet = get;
+      window.firebaseOnValue = onValue;
+      
+      // Listen for connection state changes
+      const connectedRef = ref(database, '.info/connected');
+      onValue(connectedRef, (snap) => {
+        if (snap.val() === true) {
+          document.getElementById('firebase-status').innerHTML = 'Đã kết nối đến <a href="https://console.firebase.google.com/u/0/project/mediapipe-91dac/database/mediapipe-91dac-default-rtdb/data" target="_blank">Firebase</a>';
+          document.getElementById('firebase-status').classList.add('connected');
+          
+          // Initialize device states from Firebase
+          initializeDevicesFromFirebase();
+        } else {
+          document.getElementById('firebase-status').textContent = 'Mất kết nối đến Firebase';
+          document.getElementById('firebase-status').classList.remove('connected');
+        }
+      });
+      
+      // Initialize device states from Firebase
+      function initializeDevicesFromFirebase() {
+        const relaysRef = ref(database, 'relays');
+        
+        onValue(relaysRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            // Update UI based on Firebase data
+            updateDeviceUI(data);
+          }
+        });
+      }
+      
+      // Update device UI based on Firebase data
+      function updateDeviceUI(relaysData) {
+        const deviceCards = document.querySelectorAll('.device-card');
+        
+        deviceCards.forEach(card => {
+          const relayKey = card.dataset.relay;
+          const isActive = relaysData[relayKey];
+          
+          const iconCircle = card.querySelector('.icon-circle');
+          const statusDot = card.querySelector('.status-dot');
+          const statusText = card.querySelector('.status-text');
+          
+          if (isActive) {
+            iconCircle.classList.add('active');
+            statusDot.classList.remove('offline');
+            statusDot.classList.add('online');
+            statusText.textContent = `Bật • Cập nhật: ${getCurrentTime()}`;
+          } else {
+            iconCircle.classList.remove('active');
+            statusDot.classList.remove('online');
+            statusDot.classList.add('offline');
+            statusText.textContent = `Tắt • Cập nhật: ${getCurrentTime()}`;
+          }
+        });
+      }
+      
+      // Helper function to get current time
+      function getCurrentTime() {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        
+        return `${hours}:${minutes}`;
+      }
+      
+      // Export the function to be used in script.js
+      window.updateDeviceUI = updateDeviceUI;
+      window.initializeDevicesFromFirebase = initializeDevicesFromFirebase;
+      
+      console.log("Firebase initialized successfully");
+    </script>
+
+    <script src="script.js"></script>
+</body>
+</html>
